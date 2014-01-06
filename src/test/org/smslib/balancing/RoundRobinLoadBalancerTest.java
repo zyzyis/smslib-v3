@@ -6,8 +6,7 @@ package org.smslib.balancing;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 import org.smslib.AGateway;
 import org.smslib.OutboundMessage;

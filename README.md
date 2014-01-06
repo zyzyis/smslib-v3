@@ -1,3 +1,5 @@
-# SMSLib v3.5.x
+# A fork from SMSLib v3.5.x
 
-For more information, visit http://smslib.org
+For SMSlib information, visit http://smslib.org
+
+
