@@ -20,117 +20,98 @@
 
 package org.smslib.notify;
 
-import java.util.concurrent.LinkedBlockingQueue;
 import org.smslib.Service;
 import org.smslib.helper.Logger;
 import org.smslib.threading.AServiceThread;
 
-public class NotifyQueueManager
-{
-	NotificationQueueManager notificationQueueManager;
+import java.util.concurrent.LinkedBlockingQueue;
 
-	LinkedBlockingQueue<Notification> notifyQueue;
+public class NotifyQueueManager {
+    NotificationQueueManager notificationQueueManager;
 
-	public NotifyQueueManager()
-	{
-		setNotifyQueue(new LinkedBlockingQueue<Notification>());
-	}
+    LinkedBlockingQueue<Notification> notifyQueue;
 
-	public void start()
-	{
-		setNotifyQueueManager(new NotificationQueueManager("NotifyQueueManager", 100));
-	}
+    public NotifyQueueManager() {
+        setNotifyQueue(new LinkedBlockingQueue<Notification>());
+    }
 
-	public void cancel()
-	{
-		int counter = 0;
-		int prevSize = 0;
-		while (getNotifyQueue().size() != 0)
-		{
-			if (prevSize != getNotifyQueue().size())
-			{
-				prevSize = getNotifyQueue().size();
-				counter = 0;
-			}
-			else if ((prevSize == getNotifyQueue().size()) && (counter == 25)) break;
-			try
-			{
-				Thread.sleep(200);
-			}
-			catch (Exception e)
-			{
-				// Swallow this... its an artificial delay to drain queue of events...
-			}
-			counter++;
-		}
-		getNotifyQueueManager().cancel();
-	}
+    public void start() {
+        setNotifyQueueManager(new NotificationQueueManager("NotifyQueueManager", 100));
+    }
 
-	public LinkedBlockingQueue<Notification> getNotifyQueue()
-	{
-		return this.notifyQueue;
-	}
+    public void cancel() {
+        int counter = 0;
+        int prevSize = 0;
+        while (getNotifyQueue().size() != 0) {
+            if (prevSize != getNotifyQueue().size()) {
+                prevSize = getNotifyQueue().size();
+                counter = 0;
+            } else if ((prevSize == getNotifyQueue().size()) && (counter == 25)) break;
+            try {
+                Thread.sleep(200);
+            } catch (Exception e) {
+                // Swallow this... its an artificial delay to drain queue of events...
+            }
+            counter++;
+        }
+        getNotifyQueueManager().cancel();
+    }
 
-	public void setNotifyQueue(LinkedBlockingQueue<Notification> notifyQueue)
-	{
-		this.notifyQueue = notifyQueue;
-	}
+    public LinkedBlockingQueue<Notification> getNotifyQueue() {
+        return this.notifyQueue;
+    }
 
-	protected NotificationQueueManager getNotifyQueueManager()
-	{
-		return this.notificationQueueManager;
-	}
+    public void setNotifyQueue(LinkedBlockingQueue<Notification> notifyQueue) {
+        this.notifyQueue = notifyQueue;
+    }
 
-	protected void setNotifyQueueManager(NotificationQueueManager notifyQueueManager)
-	{
-		this.notificationQueueManager = notifyQueueManager;
-	}
+    protected NotificationQueueManager getNotifyQueueManager() {
+        return this.notificationQueueManager;
+    }
 
-	class NotificationQueueManager extends AServiceThread
-	{
-		public NotificationQueueManager(String name, int delay)
-		{
-			super(name, delay, 0, true);
-		}
+    protected void setNotifyQueueManager(NotificationQueueManager notifyQueueManager) {
+        this.notificationQueueManager = notifyQueueManager;
+    }
 
-		@Override
-		public void process() throws Exception
-		{
-			Logger.getInstance().logDebug("NotifyQueueManager running...", null, null);
-			Notification notification = getNotifyQueue().take();
-			if (notification instanceof GatewayStatusNotification)
-			{
-				if (Service.getInstance().getGatewayStatusNotification() != null)
-				{
-					GatewayStatusNotification n = (GatewayStatusNotification) notification;
-					Service.getInstance().getGatewayStatusNotification().process(n.getGateway(), n.getOldStatus(), n.getNewStatus());
-				}
-			}
-			else if (notification instanceof CallNotification)
-			{
-				if (Service.getInstance().getCallNotification() != null)
-				{
-					CallNotification n = (CallNotification) notification;
-					Service.getInstance().getCallNotification().process(n.getGateway(), n.getCallerId());
-				}
-			}
-			else if (notification instanceof InboundMessageNotification)
-			{
-				if (Service.getInstance().getInboundMessageNotification() != null)
-				{
-					InboundMessageNotification n = (InboundMessageNotification) notification;
-					Service.getInstance().getInboundMessageNotification().process(n.getGateway(), n.getMsgType(), n.getMsg());
-				}
-			}
-			else if (notification instanceof OutboundMessageNotification)
-			{
-				if (Service.getInstance().getOutboundMessageNotification() != null)
-				{
-					OutboundMessageNotification n = (OutboundMessageNotification) notification;
-					Service.getInstance().getOutboundMessageNotification().process(n.getGateway(), n.getMsg());
-				}
-			}
-			Logger.getInstance().logDebug("NotifyQueueManager end...", null, null);
-		}
-	}
+    class NotificationQueueManager extends AServiceThread {
+        public NotificationQueueManager(String name, int delay) {
+            super(name, delay, 0, true);
+        }
+
+        @Override
+        public void process() throws Exception {
+            Logger.getInstance().logDebug("NotifyQueueManager running...", null, null);
+            Notification notification = getNotifyQueue().take();
+            if (notification instanceof GatewayStatusNotification) {
+                if (Service.getInstance().getGatewayStatusNotification() != null) {
+                    GatewayStatusNotification n = (GatewayStatusNotification) notification;
+                    Service.getInstance()
+                        .getGatewayStatusNotification()
+                        .process(n.getGateway(), n.getOldStatus(), n.getNewStatus());
+                }
+            } else if (notification instanceof CallNotification) {
+                if (Service.getInstance().getCallNotification() != null) {
+                    CallNotification n = (CallNotification) notification;
+                    Service.getInstance()
+                        .getCallNotification()
+                        .process(n.getGateway(), n.getCallerId());
+                }
+            } else if (notification instanceof InboundMessageNotification) {
+                if (Service.getInstance().getInboundMessageNotification() != null) {
+                    InboundMessageNotification n = (InboundMessageNotification) notification;
+                    Service.getInstance()
+                        .getInboundMessageNotification()
+                        .process(n.getGateway(), n.getMsgType(), n.getMsg());
+                }
+            } else if (notification instanceof OutboundMessageNotification) {
+                if (Service.getInstance().getOutboundMessageNotification() != null) {
+                    OutboundMessageNotification n = (OutboundMessageNotification) notification;
+                    Service.getInstance()
+                        .getOutboundMessageNotification()
+                        .process(n.getGateway(), n.getMsg());
+                }
+            }
+            Logger.getInstance().logDebug("NotifyQueueManager end...", null, null);
+        }
+    }
 }

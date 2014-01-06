@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" hash="1636160794">
+    <data-source source="LOCAL" name="PostgreSQL - unittest@localhost" uuid="921d423a-8bb4-410d-8612-1f725a3d95e1">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://localhost:5433/unittest</jdbc-url>
+      <user-name>tester</user-name>
+      <user-password>dfdedfcfdfd9dfdedfcfdfd8</user-password>
+      <libraries>
+        <library>
+          <url>file://$PROJECT_DIR$/lib/postgresql-9.1-901.jdbc4.jar</url>
+        </library>
+      </libraries>
+    </data-source>
+  </component>
+</project>
+
