@@ -1,173 +1,122 @@
 package org.smslib.test;
 
-import org.smslib.*;
-import org.smslib.helper.Logger;
-import org.smslib.notify.InboundMessageNotification;
+import org.smslib.InboundMessage;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
+import java.util.Calendar;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  */
-public class DeviceSimulator extends AGateway {
-
-    private ConcurrentLinkedQueue<String> cmds;
-    private int refCounter = 0;
+public class DeviceSimulator {
+    private Queue<InboundMessage> pendingMessages;
+    private String id;
     private int power;
     private int automode;
+    private byte[] state;
 
-    /**
-     * Duration between incoming messages in milliseconds
-     */
-    protected int receiveCycle;
-    public DeviceSimulator(String id) {
-        super(id);
-        setAttributes(GatewayAttributes.SEND | GatewayAttributes.RECEIVE);
-        setInbound(true);
-        setOutbound(true);
-        this.receiveCycle = 6000;
-        cmds = new ConcurrentLinkedQueue<String>();
+    public String getId() {
+        return id;
     }
 
-    /* (non-Javadoc)
-     * @see org.smslib.AGateway#deleteMessage(org.smslib.InboundMessage)
-     */
-    @Override
-    public boolean deleteMessage(InboundMessage msg) throws
-            TimeoutException,
-            GatewayException,
-            IOException,
-            InterruptedException {
-        //NOOP
-        return true;
-    }
-
-    List<InboundMessage> fetchMessage() {
+    public synchronized List<InboundMessage> fetchMessage() {
         List<InboundMessage> result = new ArrayList<>();
-        while (!cmds.isEmpty()) {
-            incInboundMessageCount();
-            String cmd = cmds.poll();
-            String content = createMessage(cmd);
-            InboundMessage msg =
-                new InboundMessage(
-                    new java.util.Date(),
-                    "+1234567890",
-                    content,
-                    0,
-                    null
-                );
-            msg.setGatewayId(this.getGatewayId());
-            result.add(msg);
+        while (!pendingMessages.isEmpty()) {
+            result.add(pendingMessages.poll());
         }
         return result;
+    }
+
+    public synchronized void receiveMessage(String msg) {
+        String content = createMessage(msg);
+        InboundMessage newMessage = new InboundMessage(
+            new java.util.Date(),
+            id,
+            content,
+            0,
+            null
+        );
+        pendingMessages.add(newMessage);
+    }
+
+    public DeviceSimulator(String id) {
+        this.id = id;
+        this.power = 0;
+        this.automode = 1;
+        this.state = new byte[20];
+        pendingMessages = new LinkedBlockingDeque<>();
+    }
+
+    private String createRealtimeMessage() {
+        Calendar calendar = Calendar.getInstance();
+        final int[] cc = new int[] {0x158, 0x192, 0x1D0, 0x24E, 0x2BE, 0x330, 0x3A6};
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int min = calendar.get(Calendar.MINUTE);
+        int vol = cc[(int)(Math.random() * (cc.length - 1))];
+        int cur = 0x123;
+        int temp = 0x020;
+        int pwm = 2;
+        int error = 0;
+
+        byte[] tmp = ByteBuffer.allocate(2).putInt(hour).array();
+        state[0] = tmp[0];
+        state[1] = tmp[1];
+
+        tmp = ByteBuffer.allocate(2).putInt(min).array();
+        state[2] = tmp[0];
+        state[3] = tmp[1];
+
+        tmp = ByteBuffer.allocate(2).putInt(vol).array();
+        state[4] = tmp[0];
+        state[5] = tmp[1];
+
+        tmp = ByteBuffer.allocate(2).putInt(cur).array();
+        state[6] = tmp[0];
+        state[7] = tmp[1];
+
+        tmp = ByteBuffer.allocate(2).putInt(temp).array();
+        state[8] = tmp[0];
+
+        tmp = ByteBuffer.allocate(2).putInt(pwm).array();
+        state[9] = tmp[0];
+
+        tmp = ByteBuffer.allocate(2).putInt(error).array();
+        state[10] = tmp[0];
+
+        return new String(state);
     }
 
     private String createMessage(String cmd) {
-        String result = null;
-        switch (cmd) {
-            case "order0" : // power adjust
+        String result = "defaultvalue";
+        String[] tokens = cmd.split("[ ,]");
+        switch (tokens[0]) {
+            case "order0" :
+                // set power
+                power = Integer.parseInt(tokens[1].toLowerCase());
                 break;
             case "order1" :
+                // set auto mode
+                automode = 1;
                 break;
             case "order2" :
+                // remote reset
                 break;
             case "order3" :
+                // return setting
                 break;
             case "order4" :
+                // return realtime data
+                result = createRealtimeMessage();
                 break;
             case "order5" :
+                // show log data
+                break;
+            case "order6":
                 break;
         }
         return result;
-    }
-
-    /* (non-Javadoc)
-     * @see org.smslib.AGateway#startGateway()
-     */
-    @Override
-    public void startGateway() throws
-            TimeoutException,
-            GatewayException,
-            IOException,
-            InterruptedException {
-        super.startGateway();
-    }
-
-    /* (non-Javadoc)
-     * @see org.smslib.AGateway#stopGateway()
-     */
-    @Override
-    public void stopGateway() throws
-            TimeoutException,
-            GatewayException,
-            IOException,
-            InterruptedException {
-        super.stopGateway();
-    }
-
-    /* (non-Javadoc)
-     * @see org.smslib.AGateway#readMessages(java.util.List, org.smslib.MessageClasses)
-     */
-    @Override
-    public void readMessages(
-        Collection<InboundMessage> msgList,
-        InboundMessage.MessageClasses
-        msgClass
-    ) throws
-        TimeoutException,
-        GatewayException,
-        IOException,
-        InterruptedException {
-        // Return a new generated message
-        if (!cmds.isEmpty()) {
-            msgList.addAll(fetchMessage());
-        }
-    }
-
-    @Override
-    public boolean sendMessage(OutboundMessage msg) throws
-            TimeoutException,
-            GatewayException,
-            IOException,
-            InterruptedException {
-        //if (getGatewayId().equalsIgnoreCase("Test3"))
-        // throw new IOException("Dummy Exception!!!");
-        // simulate delay
-        Logger.getInstance()
-            .logInfo(
-                "Sending to: " + msg.getRecipient() + " via: " + msg.getGatewayId(),
-                null,
-                getGatewayId()
-            );
-
-        String content = msg.getText();
-        cmds.add(content);
-
-        msg.setDispatchDate(new Date());
-        msg.setMessageStatus(OutboundMessage.MessageStatuses.SENT);
-        msg.setRefNo(Integer.toString(++this.refCounter));
-        msg.setGatewayId(getGatewayId());
-        Logger.getInstance()
-            .logInfo(
-                "Sent to: " + msg.getRecipient() + " via: " + msg.getGatewayId(),
-                null,
-                getGatewayId()
-            );
-        incOutboundMessageCount();
-        return true;
-    }
-
-    @Override
-    public int getQueueSchedulingInterval() {
-        return 200;
-    }
-
-    @Override
-    public boolean isInbound() {
-        return true;
     }
 }
